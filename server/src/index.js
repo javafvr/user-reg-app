@@ -1,32 +1,60 @@
-//Добавим дополнительные плагины Express:
+// Добавим дополнительные плагины Express:
 // - CORS (Для доступа к удаленным хостам),
 // - morgan (Для ведения логов),
 // - bodyParser (Для получения данных с Frontend)
-// - config (Тут храним необходимые настройки сервера, такие как port,)
+// - config (Тут храним необходимые настройки сервера, 
+// такие как порт, имя базы данных, логин, пароль)
 
-const 	express = require('express'),
-		bodyParser = require('body-parser'),
-		cors = require('cors'),
-		morgan = require('morgan'),
-		app = express(),
-		config = require('./config/config')
+const express = require('express'),
+      bodyParser = require('body-parser'),
+      cors = require('cors'),
+      morgan = require('morgan'),
+      mysql = require('mysql'),
+      app = express(),
+      config = require('./config/config')
 
-app.use(morgan('combined'));
-app.use(bodyParser.json());
-app.use(cors());
+let connection = mysql.createConnection({
+  host     : config.dbHost,
+  user     : config.dbUser,
+  password : config.dbPassword,
+  database : config.db
+})
 
-app.listen(process.env.PORT || config.port, 
-	() => console.log(`Server start on port ${config.port} ...`));
+
+app.use(morgan('combined'))
+app.use(bodyParser.json())
+app.use(cors())
+//app.use(require('./routes/registration'))
+
+// Подключаемся к базе
+connection.connect((err)=>{
+  if(err==null) {
+    console.log(`connected to data base`)
+    app.listen(process.env.PORT || config.port, 
+      () => console.log(`Server start on port ${config.port} ...`))
+
+  } else {
+    console.log('Error connecting to data base!!!')
+  }
+})
+
 
 
 app.get('/profile', (req, res) => {
-	res.send(
-		{
-			id: "1",
-			firstName: "Dmitrii",
-			lastName: "Dolganov",
-			email: "inet72@gmail.com",
-			password: "123"
-		}
-	)
+
+  connection.query('SELECT * FROM `profiles` WHERE id=1', function(err, rows, fields) {
+
+  if (err) throw err
+    res.send(
+      {
+        id: rows[0].id,
+        firstName: rows[0].first_name,
+        lastName: rows[0].last_name,
+        email: rows[0].email,
+        password: rows[0].password
+      }
+    )
+  })
 })
+
+// connection.end()
